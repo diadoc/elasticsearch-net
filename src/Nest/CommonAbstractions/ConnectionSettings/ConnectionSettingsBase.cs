@@ -32,7 +32,7 @@ namespace Nest
 
 		[Obsolete("Please use the constructor taking ISerializerFactory instead of a Func")]
 		public ConnectionSettings(IConnectionPool connectionPool, IConnection connection, Func<ConnectionSettings, IElasticsearchSerializer> serializerFactory)
-			: base(connectionPool, connection, null, s => serializerFactory(s)) { }
+			: base(connectionPool, connection, null, s => serializerFactory?.Invoke(s)) { }
 
 	}
 
