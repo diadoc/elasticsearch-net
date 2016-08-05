@@ -160,7 +160,7 @@ namespace Elasticsearch.Net
 		{
 			this._connectionPool = connectionPool;
 			this._connection = connection ?? new HttpConnection();
-			this._serializerFactory = serializerFactory ?? (c=>this.DefaultSerializer((T)this));
+			this._serializerFactory = serializerFactory ?? (c => this.DefaultSerializer((T)this));
 			// ReSharper disable once VirtualMemberCallInContructor
 			this._serializer = _serializerFactory((T)this);
 

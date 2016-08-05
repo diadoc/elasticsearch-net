@@ -15,40 +15,63 @@ namespace Nest
 	{
 		private static readonly Encoding ExpectedEncoding = new UTF8Encoding(false);
 
+
 		protected IConnectionSettingsValues Settings { get; }
 		protected ElasticContractResolver ContractResolver { get; }
 
 		//todo this internal smells
 		internal JsonSerializer Serializer => _defaultSerializer;
 
-		private readonly Dictionary<SerializationFormatting, JsonSerializer> _defaultSerializers;
-		private readonly JsonSerializer _defaultSerializer;
+		private Dictionary<SerializationFormatting, JsonSerializer> _defaultSerializers;
+		private JsonSerializer _defaultSerializer;
 
+		[Obsolete("Use the connection settings constructor that takes an ISerializerFactory")]
 		protected virtual void ModifyJsonSerializerSettings(JsonSerializerSettings settings) { }
+
 		protected virtual IList<Func<Type, JsonConverter>> ContractConverters => null;
 
 		public JsonNetSerializer(IConnectionSettingsValues settings) : this(settings, null) { }
 
 		/// <summary>
-		/// this constructor is only here for stateful (de)serialization 
+		/// this constructor is only here for stateful (de)serialization
 		/// </summary>
-		internal JsonNetSerializer(IConnectionSettingsValues settings, JsonConverter stateFullConverter)
+		protected internal JsonNetSerializer(
+			IConnectionSettingsValues settings,
+			JsonConverter stateFullConverter
+			)
 		{
 			this.Settings = settings;
+
 			var piggyBackState = stateFullConverter == null ? null : new JsonConverterPiggyBackState { ActualJsonConverter = stateFullConverter };
 			// ReSharper disable once VirtualMemberCallInContructor
 			this.ContractResolver = new ElasticContractResolver(this.Settings, this.ContractConverters) { PiggyBackState = piggyBackState };
 
 			this._defaultSerializer = JsonSerializer.Create(this.CreateSettings(SerializationFormatting.None));
-			//this._defaultSerializer.Formatting = Formatting.None; 
 			var indentedSerializer = JsonSerializer.Create(this.CreateSettings(SerializationFormatting.Indented));
-			//indentedSerializer.Formatting = Formatting.Indented; 
 			this._defaultSerializers = new Dictionary<SerializationFormatting, JsonSerializer>
 			{
 				{ SerializationFormatting.None, this._defaultSerializer },
 				{ SerializationFormatting.Indented, indentedSerializer }
 			};
 		}
+
+		protected void CreateCustomJsonSerializers(Action<JsonSerializerSettings, IConnectionSettingsValues> s)
+		{
+			var collapsed = this.CreateSettings(SerializationFormatting.None);
+			var indented = this.CreateSettings(SerializationFormatting.Indented);
+			s(collapsed, this.Settings);
+			s(indented, this.Settings);
+
+			this._defaultSerializer = JsonSerializer.Create(collapsed);
+			var indentedSerializer = JsonSerializer.Create(indented);
+			this._defaultSerializers = new Dictionary<SerializationFormatting, JsonSerializer>
+			{
+				{ SerializationFormatting.None, this._defaultSerializer },
+				{ SerializationFormatting.Indented, indentedSerializer }
+			};
+
+		}
+
 
 		public virtual void Serialize(object data, Stream writableStream, SerializationFormatting formatting = SerializationFormatting.Indented)
 		{
