@@ -169,7 +169,7 @@ namespace Nest
 								attachment.Language = reader.ReadAsString();
 								break;
 							case "_detect_language":
-								attachment.DetectLanguage = reader.ReadAsBoolean();
+								attachment.DetectLanguage = bool.Parse(reader.ReadAsString() ?? string.Empty);
 								break;
 							case "_indexed_chars":
 								reader.Read();
